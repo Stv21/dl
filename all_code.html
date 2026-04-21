@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>All Experiments</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+<h1>Deep Learning Lab Experiments - All Code</h1>
+
+<!-- Experiment 1: McCulloch-Pitts Model for AND -->
+<h2>Experiment 1: McCulloch-Pitts Model for AND</h2>
+<pre>
+# Define a generic gate function
+def gate(inputs, weights, threshold):
+    weighted_sum = sum(i * w for i, w in zip(inputs, weights))
+    return 1 if weighted_sum &gt;= threshold else 0, weights, threshold
+
+
+# Define specific gate functions
+def and_gate(x1, x2):
+    return gate([x1, x2], weights=[1, 1], threshold=2)
+
+# Generate a table-like output for the gates
+def generate_gate_table(gate_func, gate_name, inputs):
+    print(f&quot;\n{gate_name} Gate:&quot;)
+    print(&quot;x1    x2     O/P&quot;)
+    for x1, x2 in inputs:
+        output, weights, threshold = gate_func(x1, x2)
+        weights_str = &quot;, &quot;.join(map(str, weights))  # Convert weights to a string
+        print(f&quot;{x1}     {x2}       {output}&quot;)
+    print(f&quot;Selected Weights: {weights_str}\nSelected Threshold: {threshold}&quot;)
+
+
+# Input combinations for testing
+input_combinations = [(0, 0), (0, 1), (1, 0), (1, 1)]
+
+# Generate tables for AND, OR, and XOR gates
+generate_gate_table(and_gate, &quot;AND&quot;, input_combinations)
+</pre>
+
+<!-- Experiment 2: McCulloch-Pitts Model for OR -->
+<h2>Experiment 2: McCulloch-Pitts Model for OR</h2>
+<pre>
+# Define a generic gate function
+def gate(inputs, weights, threshold):
+    weighted_sum = sum(i * w for i, w in zip(inputs, weights))
+    return 1 if weighted_sum &gt;= threshold else 0, weights, threshold
+
+# Define specific gate functions
+def or_gate(x1, x2):
+    return gate([x1, x2], weights=[1, 1], threshold=1)
+
+# Generate a table-like output for the gates
+def generate_gate_table(gate_func, gate_name, inputs):
+    print(f&quot;\n{gate_name} Gate:&quot;)
+    print(&quot;x1    x2     O/P&quot;)
+    for x1, x2 in inputs:
+        output, weights, threshold = gate_func(x1, x2)
+        weights_str = &quot;, &quot;.join(map(str, weights))  # Convert weights to a string
+        print(f&quot;{x1}     {x2}       {output}&quot;)
+    print(f&quot;Selected Weights: {weights_str}\nSelected Threshold: {threshold}&quot;)
+
+
+# Input combinations for testing
+input_combinations = [(0, 0), (0, 1), (1, 0), (1, 1)]
+
+# Generate tables for AND, OR, and XOR gates
+generate_gate_table(or_gate, &quot;OR&quot;, input_combinations)
+</pre>
+
+<!-- Experiment 3: CNN for Image Classification (Dog vs Cat) -->
+<h2>Experiment 3: CNN for Image Classification (Dog vs Cat)</h2>
+<pre>
+# Import the required libraries
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.utils.data import DataLoader
+from torchvision import datasets, transforms
+import matplotlib.pyplot as plt
+from sklearn.metrics import classification_report, confusion_matrix
+import seaborn as sns
+import os
+import numpy as np
+
+# Device config
+device = torch.device(&#x27;cuda&#x27; if torch.cuda.is_available() else &#x27;cpu&#x27;)
+
+# Unzip dataset if not extracted
+!mkdir &quot;custom_stl10_subset&quot;
+!unzip -q &quot;/content/custom_stl10_subset.zip&quot; -d &quot;/content/custom_stl10_subset&quot;
+
+# Define transforms
+transform = transforms.Compose([
+    transforms.ToTensor()
+])
+
+# Load dataset using ImageFolder
+dataset = datasets.ImageFolder(root=&#x27;custom_stl10_subset&#x27;, transform=transform)
+class_names = dataset.classes  # Get class names from folder structure
+print(&quot;Class names:&quot;, class_names)
+
+# Split into train/test (80-20 split)
+train_size = int(0.8 * len(dataset))
+test_size = len(dataset) - train_size
+train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
+
+train_loader = DataLoader(train_dataset, batch_size=10, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=10, shuffle=False)
+
+# Simple CNN Classifier
+class SimpleCNN(nn.Module):
+    def __init__(self):
+        super(SimpleCNN, self).__init__()
+        self.conv1 = nn.Conv2d(3, 16, 3, padding=1)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.fc1 = nn.Linear(16*48*48, len(class_names))
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = x.view(-1, 16*48*48)
+        x = self.fc1(x)
+        return x
+
+# Model, Loss, Optimizer
+model = SimpleCNN().to(device)
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
+# Training Loop
+num_epochs = 50
+train_losses, train_accuracies = [], []
+
+for epoch in range(num_epochs):
+    model.train()
+    running_loss, correct, total = 0.0, 0, 0
+
+    for imgs, labels in train_loader:
+        imgs, labels = imgs.to(device), labels.to(device)
+        outputs = model(imgs)
+        loss = criterion(outputs, labels)
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        running_loss += loss.item() * imgs.size(0)
+        _, preds = torch.max(outputs, 1)
+        correct += (preds == labels).sum().item()
+        total += labels.size(0)
+
+    epoch_loss = running_loss / total
+    epoch_acc = correct / total
+    train_losses.append(epoch_loss)
+    train_accuracies.append(epoch_acc)
+    print(f&#x27;Epoch [{epoch+1}/{num_epochs}] - Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.4f}&#x27;)
+
+# Plot Loss and Accuracy
+plt.figure(figsize=(10,4))
+plt.subplot(1,2,1)
+plt.plot(range(1, num_epochs+1), train_losses, marker=&#x27;o&#x27;)
+plt.title(&#x27;Training Loss&#x27;)
+plt.xlabel(&#x27;Epoch&#x27;)
+plt.ylabel(&#x27;Loss&#x27;)
+plt.grid(True)
+
+plt.subplot(1,2,2)
+plt.plot(range(1, num_epochs+1), train_accuracies, marker=&#x27;o&#x27;, color=&#x27;green&#x27;)
+plt.title(&#x27;Training Accuracy&#x27;)
+plt.xlabel(&#x27;Epoch&#x27;)
+plt.ylabel(&#x27;Accuracy&#x27;)
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+# Evaluation on Test Set
+model.eval()
+all_preds, all_labels = [], []
+
+with torch.no_grad():
+    for imgs, labels in test_loader:
+        imgs, labels = imgs.to(device), labels.to(device)
+        outputs = model(imgs)
+        _, preds = torch.max(outputs, 1)
+        all_preds.extend(preds.cpu().numpy())
+        all_labels.extend(labels.cpu().numpy())
+
+# Classification Report
+print(&quot;\nClassification Report:&quot;)
+print(classification_report(all_labels, all_preds, target_names=class_names))
+
+# Confusion Matrix
+cm = confusion_matrix(all_labels, all_preds)
+plt.figure(figsize=(8,6))
+sns.heatmap(cm, annot=True, fmt=&#x27;d&#x27;, xticklabels=class_names, yticklabels=class_names, cmap=&#x27;Blues&#x27;)
+plt.title(&#x27;Confusion Matrix&#x27;)
+plt.xlabel(&#x27;Predicted Label&#x27;)
+plt.ylabel(&#x27;True Label&#x27;)
+plt.show()
+
+# Sample Predictions Visualization
+def show_predictions(loader, n=6):
+    dataiter = iter(loader)
+    images, labels = next(dataiter)
+    images, labels = images.to(device), labels.to(device)
+    outputs = model(images)
+    _, preds = torch.max(outputs, 1)
+
+    images = images.cpu().numpy()
+    fig, axes = plt.subplots(1, n, figsize=(15,3))
+    for i in range(n):
+        img = np.transpose(images[i], (1,2,0))
+        axes[i].imshow(img)
+        axes[i].set_title(f&#x27;True: {class_names[labels[i]]}\nPred: {class_names[preds[i]]}&#x27;)
+        axes[i].axis(&#x27;off&#x27;)
+    plt.tight_layout()
+    plt.show()
+
+show_predictions(test_loader)
+</pre>
+
+<!-- Experiment 4: Autoencoder for Image Compression -->
+<h2>Experiment 4: Autoencoder for Image Compression</h2>
+<pre>
+# Import the required libraries:
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader
+from torchvision import datasets, transforms
+import numpy as np
+import os
+import matplotlib.pyplot as plt
+
+# Device configuration
+device = torch.device(&#x27;cuda&#x27; if torch.cuda.is_available() else &#x27;cpu&#x27;)
+
+# Unzip the dataset:
+!mkdir &quot;custom_stl10_subset&quot;
+
+!unzip -q &quot;/content/custom_stl10_subset.zip&quot; -d &quot;/content/custom_stl10_subset&quot;
+
+# Transform (convert images to tensors)
+transform = transforms.Compose([
+    transforms.ToTensor()
+])
+
+# Load dataset using ImageFolder
+dataset = datasets.ImageFolder(root=&#x27;/content/custom_stl10_subset&#x27;, transform=transform)
+loader = DataLoader(dataset, batch_size=10, shuffle=True)
+
+# Simple Autoencoder Definition
+class Autoencoder(nn.Module):
+    def __init__(self):
+        super(Autoencoder, self).__init__()
+        self.encoder = nn.Sequential(
+            nn.Conv2d(3, 16, 3, stride=2, padding=1), nn.ReLU(),
+            nn.Conv2d(16, 8, 3, stride=2, padding=1), nn.ReLU()
+        )
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose2d(8, 16, 2, stride=2), nn.ReLU(),
+            nn.ConvTranspose2d(16, 3, 2, stride=2), nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        x = self.encoder(x)
+        x = self.decoder(x)
+        return x
+
+# Model, Loss, Optimizer
+model = Autoencoder().to(device)
+criterion = nn.MSELoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
+# Training Loop
+num_epochs = 20
+train_losses = []
+
+for epoch in range(num_epochs):
+    running_loss = 0.0
+    for imgs, _ in loader:
+        imgs = imgs.to(device)
+        outputs = model(imgs)
+        loss = criterion(outputs, imgs)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        running_loss += loss.item()
+    epoch_loss = running_loss / len(loader)
+    train_losses.append(epoch_loss)
+    print(f&#x27;Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}&#x27;)
+
+# Plot Training Loss
+plt.figure(figsize=(6,4))
+plt.plot(range(1, num_epochs+1), train_losses, marker=&#x27;o&#x27;)
+plt.title(&#x27;Autoencoder Training Loss&#x27;)
+plt.xlabel(&#x27;Epoch&#x27;)
+plt.ylabel(&#x27;MSE Loss&#x27;)
+plt.grid(True)
+plt.show()
+
+# Visualize Original and Reconstructed Images
+def show_images(original, reconstructed, n=6):
+    original = original[:n].cpu()
+    reconstructed = reconstructed[:n].cpu()
+
+    fig, axes = plt.subplots(2, n, figsize=(15,4))
+    for i in range(n):
+        axes[0, i].imshow(np.transpose(original[i], (1,2,0)))
+        axes[0, i].set_title(&#x27;Original&#x27;)
+        axes[0, i].axis(&#x27;off&#x27;)
+
+        axes[1, i].imshow(np.transpose(reconstructed[i].detach(), (1,2,0)))
+        axes[1, i].set_title(&#x27;Compressed&#x27;)
+        axes[1, i].axis(&#x27;off&#x27;)
+
+    plt.tight_layout()
+    plt.show()
+
+# Evaluate on a sample batch
+sample_imgs, _ = next(iter(loader))
+sample_imgs = sample_imgs.to(device)
+with torch.no_grad():
+    reconstructed_imgs = model(sample_imgs)
+
+show_images(sample_imgs, reconstructed_imgs)
+
+# Compute overall MSE on the entire dataset
+model.eval()
+total_mse = 0.0
+with torch.no_grad():
+    for imgs, _ in loader:
+        imgs = imgs.to(device)
+        outputs = model(imgs)
+        total_mse += criterion(outputs, imgs).item()
+
+average_mse = total_mse / len(loader)
+print(f&quot;Average MSE on dataset: {average_mse:.4f}&quot;)
+</pre>
+
+<!-- Experiment 5: Optimization Functions -->
+<h2>Experiment 5: Optimization Functions</h2>
+<pre>
+# Import the required libraries
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Sample loss function: f(x) = x^2 + 3x + 2
+def loss_function(x):
+    return x**2 + 3*x + 2
+
+# Derivative of the loss function: f&#x27;(x) = 2x + 3
+def gradient(x):
+    return 2*x + 3
+
+# Optimization algorithms
+class OptimizerDemo:
+    def __init__(self, learning_rate=0.1, max_iters=50):
+        self.lr = learning_rate
+        self.max_iters = max_iters
+
+    def gradient_descent(self, x_init):
+        x = x_init
+        history = [x]
+        for _ in range(self.max_iters):
+            x -= self.lr * gradient(x)
+            history.append(x)
+        return history
+
+    def momentum(self, x_init, beta=0.9):
+        x = x_init
+        v = 0  # Momentum term
+        history = [x]
+        for _ in range(self.max_iters):
+            v = beta * v + (1 - beta) * gradient(x)
+            x -= self.lr * v
+            history.append(x)
+        return history
+
+    def adagrad(self, x_init, epsilon=1e-8):
+        x = x_init
+        g_square = 0
+        history = [x]
+        for _ in range(self.max_iters):
+            g = gradient(x)
+            g_square += g**2
+            x -= (self.lr / (np.sqrt(g_square) + epsilon)) * g
+            history.append(x)
+        return history
+
+    def rmsprop(self, x_init, beta=0.9, epsilon=1e-8):
+        x = x_init
+        s = 0
+        history = [x]
+        for _ in range(self.max_iters):
+            g = gradient(x)
+            s = beta * s + (1 - beta) * g**2
+            x -= (self.lr / (np.sqrt(s) + epsilon)) * g
+            history.append(x)
+        return history
+
+    def adam(self, x_init, beta1=0.9, beta2=0.999, epsilon=1e-8):
+        x = x_init
+        m, v = 0, 0
+        history = [x]
+        for t in range(1, self.max_iters + 1):
+            g = gradient(x)
+            m = beta1 * m + (1 - beta1) * g
+            v = beta2 * v + (1 - beta2) * g**2
+            m_hat = m / (1 - beta1**t)
+            v_hat = v / (1 - beta2**t)
+            x -= (self.lr / (np.sqrt(v_hat) + epsilon)) * m_hat
+            history.append(x)
+        return history
+
+# Initialize optimizer class
+optim = OptimizerDemo(learning_rate=0.1, max_iters=50)
+
+# Initial value of x
+x_init = 10
+
+# Apply different optimization algorithms
+gd_path = optim.gradient_descent(x_init)
+momentum_path = optim.momentum(x_init)
+adagrad_path = optim.adagrad(x_init)
+rmsprop_path = optim.rmsprop(x_init)
+adam_path = optim.adam(x_init)
+
+# Plot optimization progress
+plt.figure(figsize=(10, 6))
+plt.plot(gd_path, label=&quot;Gradient Descent&quot;, linestyle=&quot;--&quot;)
+plt.plot(momentum_path, label=&quot;Momentum&quot;, linestyle=&quot;--&quot;)
+plt.plot(adagrad_path, label=&quot;AdaGrad&quot;, linestyle=&quot;--&quot;)
+plt.plot(rmsprop_path, label=&quot;RMSprop&quot;, linestyle=&quot;--&quot;)
+plt.plot(adam_path, label=&quot;Adam&quot;, linestyle=&quot;--&quot;)
+plt.axhline(y=-1.5, color=&#x27;black&#x27;, linestyle=&#x27;dotted&#x27;, label=&quot;Global Minimum&quot;)
+plt.xlabel(&quot;Iterations&quot;)
+plt.ylabel(&quot;x Value&quot;)
+plt.title(&quot;Optimization Function Demonstration&quot;)
+plt.legend()
+plt.show()
+</pre>
+
+<!-- Experiment 6: Digit Recognition using MNIST -->
+<h2>Experiment 6: Digit Recognition using MNIST</h2>
+<pre>
+import tensorflow as tf
+# Load MNIST dataset
+(x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
+# Normalize (0-255 to 0-1)
+x_train = x_train / 255.0
+x_test = x_test / 255.0
+# Reshape for CNN (add channel dimension)
+x_train = x_train.reshape(-1, 28, 28, 1)
+x_test = x_test.reshape(-1, 28, 28, 1)
+# Build CNN model
+model = tf.keras.Sequential([
+    tf.keras.layers.Conv2D(32, (3,3), activation=&#x27;relu&#x27;, input_shape=(28,28,1)),
+    tf.keras.layers.MaxPooling2D(),
+    tf.keras.layers.Conv2D(64, (3,3), activation=&#x27;relu&#x27;),
+    tf.keras.layers.MaxPooling2D(),
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(64, activation=&#x27;relu&#x27;),
+    tf.keras.layers.Dense(10, activation=&#x27;softmax&#x27;)   # 10 digits
+])
+# Compile model
+model.compile(optimizer=&#x27;adam&#x27;,
+              loss=&#x27;sparse_categorical_crossentropy&#x27;,
+              metrics=[&#x27;accuracy&#x27;])
+# Train model
+model.fit(x_train, y_train, epochs=5, validation_data=(x_test, y_test))
+# Evaluate
+loss, acc = model.evaluate(x_test, y_test)
+print(&quot;Test Accuracy:&quot;, acc)
+# Save model
+model.save(&quot;mnist_digit_model.h5&quot;)
+
+### Test on One Sample
+import numpy as np
+# Predict first test image
+pred = model.predict(x_test[:1])
+print(&quot;Predicted Digit:&quot;, np.argmax(pred))
+print(&quot;Actual Digit:&quot;, y_test[0])
+
+#### Output Example
+# Predicted Digit: 7
+# Actual Digit: 7
+</pre>
+
+</body>
+</html>
