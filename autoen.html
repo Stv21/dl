@@ -1,11 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Experiment 4: Autoencoder for Image Compression</title>
-    <meta charset="UTF-8">
-</head>
-<body>
-<pre>
 # Import the required libraries:
 import torch
 import torch.nn as nn
@@ -16,12 +8,12 @@ import os
 import matplotlib.pyplot as plt
 
 # Device configuration
-device = torch.device(&#x27;cuda&#x27; if torch.cuda.is_available() else &#x27;cpu&#x27;)
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Unzip the dataset:
-!mkdir &quot;custom_stl10_subset&quot;
+!mkdir "custom_stl10_subset"
 
-!unzip -q &quot;/content/custom_stl10_subset.zip&quot; -d &quot;/content/custom_stl10_subset&quot;
+!unzip -q "/content/custom_stl10_subset.zip" -d "/content/custom_stl10_subset"
 
 # Transform (convert images to tensors)
 transform = transforms.Compose([
@@ -29,7 +21,7 @@ transform = transforms.Compose([
 ])
 
 # Load dataset using ImageFolder
-dataset = datasets.ImageFolder(root=&#x27;/content/custom_stl10_subset&#x27;, transform=transform)
+dataset = datasets.ImageFolder(root='/content/custom_stl10_subset', transform=transform)
 loader = DataLoader(dataset, batch_size=10, shuffle=True)
 
 # Simple Autoencoder Definition
@@ -71,14 +63,14 @@ for epoch in range(num_epochs):
         running_loss += loss.item()
     epoch_loss = running_loss / len(loader)
     train_losses.append(epoch_loss)
-    print(f&#x27;Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}&#x27;)
+    print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}')
 
 # Plot Training Loss
 plt.figure(figsize=(6,4))
-plt.plot(range(1, num_epochs+1), train_losses, marker=&#x27;o&#x27;)
-plt.title(&#x27;Autoencoder Training Loss&#x27;)
-plt.xlabel(&#x27;Epoch&#x27;)
-plt.ylabel(&#x27;MSE Loss&#x27;)
+plt.plot(range(1, num_epochs+1), train_losses, marker='o')
+plt.title('Autoencoder Training Loss')
+plt.xlabel('Epoch')
+plt.ylabel('MSE Loss')
 plt.grid(True)
 plt.show()
 
@@ -90,12 +82,12 @@ def show_images(original, reconstructed, n=6):
     fig, axes = plt.subplots(2, n, figsize=(15,4))
     for i in range(n):
         axes[0, i].imshow(np.transpose(original[i], (1,2,0)))
-        axes[0, i].set_title(&#x27;Original&#x27;)
-        axes[0, i].axis(&#x27;off&#x27;)
+        axes[0, i].set_title('Original')
+        axes[0, i].axis('off')
 
         axes[1, i].imshow(np.transpose(reconstructed[i].detach(), (1,2,0)))
-        axes[1, i].set_title(&#x27;Compressed&#x27;)
-        axes[1, i].axis(&#x27;off&#x27;)
+        axes[1, i].set_title('Compressed')
+        axes[1, i].axis('off')
 
     plt.tight_layout()
     plt.show()
@@ -118,7 +110,4 @@ with torch.no_grad():
         total_mse += criterion(outputs, imgs).item()
 
 average_mse = total_mse / len(loader)
-print(f&quot;Average MSE on dataset: {average_mse:.4f}&quot;)
-</pre>
-</body>
-</html>
+print(f"Average MSE on dataset: {average_mse:.4f}")

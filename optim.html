@@ -1,11 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Experiment 5: Optimization Functions</title>
-    <meta charset="UTF-8">
-</head>
-<body>
-<pre>
 # Import the required libraries
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,7 +6,7 @@ import matplotlib.pyplot as plt
 def loss_function(x):
     return x**2 + 3*x + 2
 
-# Derivative of the loss function: f&#x27;(x) = 2x + 3
+# Derivative of the loss function: f'(x) = 2x + 3
 def gradient(x):
     return 2*x + 3
 
@@ -93,17 +85,14 @@ adam_path = optim.adam(x_init)
 
 # Plot optimization progress
 plt.figure(figsize=(10, 6))
-plt.plot(gd_path, label=&quot;Gradient Descent&quot;, linestyle=&quot;--&quot;)
-plt.plot(momentum_path, label=&quot;Momentum&quot;, linestyle=&quot;--&quot;)
-plt.plot(adagrad_path, label=&quot;AdaGrad&quot;, linestyle=&quot;--&quot;)
-plt.plot(rmsprop_path, label=&quot;RMSprop&quot;, linestyle=&quot;--&quot;)
-plt.plot(adam_path, label=&quot;Adam&quot;, linestyle=&quot;--&quot;)
-plt.axhline(y=-1.5, color=&#x27;black&#x27;, linestyle=&#x27;dotted&#x27;, label=&quot;Global Minimum&quot;)
-plt.xlabel(&quot;Iterations&quot;)
-plt.ylabel(&quot;x Value&quot;)
-plt.title(&quot;Optimization Function Demonstration&quot;)
+plt.plot(gd_path, label="Gradient Descent", linestyle="--")
+plt.plot(momentum_path, label="Momentum", linestyle="--")
+plt.plot(adagrad_path, label="AdaGrad", linestyle="--")
+plt.plot(rmsprop_path, label="RMSprop", linestyle="--")
+plt.plot(adam_path, label="Adam", linestyle="--")
+plt.axhline(y=-1.5, color='black', linestyle='dotted', label="Global Minimum")
+plt.xlabel("Iterations")
+plt.ylabel("x Value")
+plt.title("Optimization Function Demonstration")
 plt.legend()
 plt.show()
-</pre>
-</body>
-</html>
